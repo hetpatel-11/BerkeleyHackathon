@@ -10,11 +10,30 @@ export function AircraftVisualization() {
   // State to track simulation data from PredictionPanel
   const [simulationData, setSimulationData] = useState({
     isSimulating: false,
+    isPaused: false,
     alertLevel: 'safe' as 'safe' | 'warning' | 'danger',
     currentSpeed: 0,
     simulationTime: 0,
-    rulValue: undefined as number | undefined
+    rulValue: undefined as number | undefined,
+    subsystemPredictions: undefined as any[] | undefined
   })
+
+  // State for client-side timestamp to avoid hydration issues
+  const [currentTime, setCurrentTime] = useState<string>('')
+  const [isMounted, setIsMounted] = useState(false)
+
+  // Initialize client-side timestamp after mount to avoid hydration mismatch
+  useEffect(() => {
+    setIsMounted(true)
+    setCurrentTime(new Date().toLocaleTimeString())
+    
+    // Update time every second when not simulating
+    const interval = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString())
+    }, 1000)
+    
+    return () => clearInterval(interval)
+  }, [])
 
   // Listen for simulation events from PredictionPanel
   useEffect(() => {
@@ -43,6 +62,7 @@ export function AircraftVisualization() {
             }`}
           >
             {simulationData.isSimulating ? (
+              simulationData.isPaused ? '⏸️ SIMULATION PAUSED' :
               simulationData.alertLevel === 'danger' ? '🔴 ENGINE CRITICAL' :
               simulationData.alertLevel === 'warning' ? '🟡 ENGINE CAUTION' :
               '✈️ TAKEOFF IN PROGRESS'
@@ -52,8 +72,8 @@ export function AircraftVisualization() {
           </Badge>
           <span className="text-sm text-gray-500">
             {simulationData.isSimulating ? 
-              `Takeoff Simulation: ${simulationData.simulationTime}s` : 
-              `Last Updated: ${new Date().toLocaleTimeString()}`
+              `Takeoff Simulation: ${simulationData.simulationTime}s${simulationData.isPaused ? ' (PAUSED)' : ''}` : 
+              isMounted ? `Last Updated: ${currentTime}` : 'Initializing...'
             }
           </span>
         </div>
@@ -80,6 +100,7 @@ export function AircraftVisualization() {
               currentSpeed={simulationData.currentSpeed}
               simulationTime={simulationData.simulationTime}
               rulValue={simulationData.rulValue}
+              subsystemPredictions={simulationData.subsystemPredictions}
             />
           </div>
 

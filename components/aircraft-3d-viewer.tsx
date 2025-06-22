@@ -6,12 +6,23 @@ import { OrbitControls, PerspectiveCamera, Environment } from '@react-three/drei
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
 import * as THREE from 'three'
 
+interface SubsystemPrediction {
+  subsystem: string
+  rul: number
+  risk_level: 'safe' | 'warning' | 'danger'
+  status: string
+  failure_probability?: number
+  cycle?: number
+  sensor_data?: any
+}
+
 interface AircraftViewerProps {
   alertLevel: 'safe' | 'warning' | 'danger'
   isSimulating: boolean
   currentSpeed: number
   simulationTime: number
   rulValue?: number
+  subsystemPredictions?: SubsystemPrediction[]
 }
 
 // Engine glow effect component
@@ -33,16 +44,81 @@ function EngineGlow({ position, alertLevel, isSimulating, rulValue }: {
 
   // Only show engine glow when:
   // 1. Simulation is running
-  // 2. RUL value exists and indicates risk
-  // 3. Alert level is not safe
-  if (!isSimulating || !rulValue || alertLevel === 'safe') {
-    return null // No glow when safe, not simulating, or no RUL data
+  // 2. Alert level indicates risk (warning or danger)
+  if (!isSimulating || alertLevel === 'safe') {
+    return null // No glow when safe or not simulating
   }
 
-  // Adjust glow size and intensity based on alert level
-  const glowSize = alertLevel === 'danger' ? 0.4 : 0.25
-  const glowOpacity = alertLevel === 'danger' ? 0.8 : 0.5
-  const glowColor = alertLevel === 'danger' ? '#ff3333' : '#ffaa00'
+  // Adjust glow size and intensity based on alert level - make more visible
+  const glowSize = alertLevel === 'danger' ? 0.8 : 0.6
+  const glowOpacity = alertLevel === 'danger' ? 0.9 : 0.7
+  const glowColor = alertLevel === 'danger' ? '#ff0000' : '#ff8800'
+
+  return (
+    <mesh ref={meshRef} position={position}>
+      <sphereGeometry args={[glowSize, 16, 16]} />
+      <meshBasicMaterial 
+        color={glowColor} 
+        transparent 
+        opacity={glowOpacity}
+        side={THREE.DoubleSide}
+      />
+    </mesh>
+  )
+}
+
+// Subsystem glow component for non-engine systems
+function SubsystemGlow({ position, subsystem, isSimulating, subsystemPredictions }: {
+  position: [number, number, number],
+  subsystem: string,
+  isSimulating: boolean,
+  subsystemPredictions?: SubsystemPrediction[]
+}) {
+  const meshRef = useRef<THREE.Mesh>(null)
+  
+  // Find the prediction for this subsystem
+  const prediction = subsystemPredictions?.find(p => p.subsystem === subsystem)
+  
+  // Debug logging
+  useEffect(() => {
+    if (isSimulating && subsystemPredictions) {
+      console.log(`3D Glow ${subsystem}:`, prediction ? `RUL=${prediction.rul} risk=${prediction.risk_level}` : 'No prediction')
+    }
+  }, [subsystem, prediction, isSimulating, subsystemPredictions])
+  
+  useFrame((state) => {
+    if (meshRef.current && isSimulating && prediction && prediction.risk_level !== 'safe') {
+      // Pulsing animation for warnings/danger
+      const pulse = Math.sin(state.clock.elapsedTime * 2) * 0.2 + 0.8
+      meshRef.current.scale.setScalar(pulse)
+    }
+  })
+
+  // Show glow when simulation is running and there's a risk
+  // For debugging: also show a small indicator when simulation is running even if safe
+  if (!isSimulating) {
+    return null
+  }
+  
+  // If no prediction data or safe, show a small debug indicator
+  if (!prediction || prediction.risk_level === 'safe') {
+    return (
+      <mesh position={position}>
+        <sphereGeometry args={[0.1, 8, 8]} />
+        <meshBasicMaterial 
+          color="#00ff00" 
+          transparent 
+          opacity={0.3}
+          wireframe
+        />
+      </mesh>
+    )
+  }
+
+  // Adjust glow based on risk level - make more visible
+  const glowSize = prediction.risk_level === 'danger' ? 0.8 : 0.6
+  const glowOpacity = prediction.risk_level === 'danger' ? 0.9 : 0.7
+  const glowColor = prediction.risk_level === 'danger' ? '#ff0000' : '#ff8800'
 
   return (
     <mesh ref={meshRef} position={position}>
@@ -58,16 +134,18 @@ function EngineGlow({ position, alertLevel, isSimulating, rulValue }: {
 }
 
 // Aircraft model component
-function AircraftModel({ alertLevel, isSimulating, currentSpeed, rulValue }: {
+function AircraftModel({ alertLevel, isSimulating, currentSpeed, rulValue, subsystemPredictions }: {
   alertLevel: 'safe' | 'warning' | 'danger',
   isSimulating: boolean,
   currentSpeed: number,
-  rulValue?: number
+  rulValue?: number,
+  subsystemPredictions?: SubsystemPrediction[]
 }) {
   const modelRef = useRef<THREE.Group>(null)
   const [model, setModel] = useState<THREE.Group | null>(null)
+  const [aircraftParts, setAircraftParts] = useState<{[key: string]: THREE.Mesh[]}>({})
   
-  // Load the OBJ model
+  // Load the OBJ model and identify parts
   useEffect(() => {
     const loader = new OBJLoader()
     loader.load(
@@ -81,9 +159,19 @@ function AircraftModel({ alertLevel, isSimulating, currentSpeed, rulValue }: {
         object.rotation.z = 0
         object.position.set(0, 1, 0)  // Raise aircraft slightly above ground
         
-        // Apply materials to the model
+        // Identify and categorize aircraft parts
+        const parts: {[key: string]: THREE.Mesh[]} = {
+          engines: [],
+          fuselage: [],
+          wings: [],
+          tail: [],
+          landing_gear: []
+        }
+        
+        // Apply materials and categorize parts
         object.traverse((child) => {
           if (child instanceof THREE.Mesh) {
+            // Create base material
             child.material = new THREE.MeshStandardMaterial({
               color: '#e0e0e0',
               metalness: 0.7,
@@ -91,9 +179,32 @@ function AircraftModel({ alertLevel, isSimulating, currentSpeed, rulValue }: {
             })
             child.castShadow = true
             child.receiveShadow = true
+            
+            // Categorize parts based on position (rough approximation)
+            const pos = child.position
+            if (pos.x > 1.5 || pos.x < -1.5) {
+              parts.engines.push(child) // Side-mounted engines
+            } else if (pos.z < -1) {
+              parts.tail.push(child) // Tail section
+            } else if (pos.y < 0) {
+              parts.landing_gear.push(child) // Bottom parts
+            } else if (Math.abs(pos.x) > 0.5) {
+              parts.wings.push(child) // Wing sections
+            } else {
+              parts.fuselage.push(child) // Main body
+            }
           }
         })
         
+        console.log('Aircraft parts categorized:', {
+          engines: parts.engines.length,
+          fuselage: parts.fuselage.length,
+          wings: parts.wings.length,
+          tail: parts.tail.length,
+          landing_gear: parts.landing_gear.length
+        })
+        
+        setAircraftParts(parts)
         setModel(object)
       },
       (progress) => {
@@ -112,6 +223,96 @@ function AircraftModel({ alertLevel, isSimulating, currentSpeed, rulValue }: {
     )
   }, [])
 
+  // Update aircraft part colors based on subsystem alerts
+  useEffect(() => {
+    if (!isSimulating || !aircraftParts || Object.keys(aircraftParts).length === 0) {
+      // Reset all parts to normal color when not simulating
+      Object.values(aircraftParts).flat().forEach(part => {
+        if (part.material instanceof THREE.MeshStandardMaterial) {
+          part.material.color.setHex(0xe0e0e0)
+          part.material.emissive.setHex(0x000000)
+        }
+      })
+      return
+    }
+
+    // Apply colors based on subsystem alerts
+    subsystemPredictions?.forEach(prediction => {
+      let targetParts: THREE.Mesh[] = []
+      
+      // Map subsystems to aircraft parts
+      switch (prediction.subsystem) {
+        case 'hydraulic':
+          targetParts = [...aircraftParts.landing_gear, ...aircraftParts.wings] // Hydraulics control landing gear and control surfaces
+          break
+        case 'electrical':
+          targetParts = [...aircraftParts.tail, ...aircraftParts.fuselage] // Electrical systems in tail and fuselage
+          break
+        case 'control_surface':
+          targetParts = aircraftParts.wings // Control surfaces on wings
+          break
+        case 'cabin':
+          targetParts = aircraftParts.fuselage // Cabin pressure in main fuselage
+          break
+        case 'altimeter':
+          targetParts = aircraftParts.fuselage.slice(0, 2) // Cockpit area (front fuselage parts)
+          break
+        default:
+          return
+      }
+
+      // Always log highlighting for debugging
+      console.log(`🎨 3D Highlighting ${prediction.subsystem}: RUL=${prediction.rul}, risk=${prediction.risk_level}, parts=${targetParts.length}`)
+
+      // Apply warning/danger colors to the parts with enhanced visibility
+      targetParts.forEach(part => {
+        if (part.material instanceof THREE.MeshStandardMaterial) {
+          if (prediction.risk_level === 'danger') {
+            part.material.color.setHex(0xff0000) // Bright red
+            part.material.emissive.setHex(0x660000) // Stronger red glow
+            part.material.emissiveIntensity = 0.3 // Add emissive intensity
+          } else if (prediction.risk_level === 'warning') {
+            part.material.color.setHex(0xff8800) // Bright orange
+            part.material.emissive.setHex(0x663300) // Stronger orange glow
+            part.material.emissiveIntensity = 0.2 // Add emissive intensity
+          } else {
+            part.material.color.setHex(0xe0e0e0) // Normal gray
+            part.material.emissive.setHex(0x000000) // No glow
+            part.material.emissiveIntensity = 0 // Reset intensity
+          }
+        }
+      })
+    })
+
+    // Handle engine alerts separately with enhanced visibility
+    console.log(`🎨 3D Engine highlighting: alertLevel=${alertLevel}, engines=${aircraftParts.engines?.length || 0}`)
+    
+    if (alertLevel !== 'safe') {
+      aircraftParts.engines?.forEach(engine => {
+        if (engine.material instanceof THREE.MeshStandardMaterial) {
+          if (alertLevel === 'danger') {
+            engine.material.color.setHex(0xff0000) // Bright red
+            engine.material.emissive.setHex(0x660000) // Stronger red glow
+            engine.material.emissiveIntensity = 0.4 // Strong emissive intensity
+          } else if (alertLevel === 'warning') {
+            engine.material.color.setHex(0xff8800) // Orange
+            engine.material.emissive.setHex(0x663300) // Stronger orange glow
+            engine.material.emissiveIntensity = 0.3 // Moderate emissive intensity
+          }
+        }
+      })
+    } else {
+      // Reset engine colors when safe
+      aircraftParts.engines?.forEach(engine => {
+        if (engine.material instanceof THREE.MeshStandardMaterial) {
+          engine.material.color.setHex(0xe0e0e0)
+          engine.material.emissive.setHex(0x000000)
+          engine.material.emissiveIntensity = 0
+        }
+      })
+    }
+  }, [isSimulating, subsystemPredictions, alertLevel, aircraftParts])
+
   // Keep aircraft stable - no unnecessary movement
   useFrame(() => {
     if (modelRef.current) {
@@ -127,19 +328,13 @@ function AircraftModel({ alertLevel, isSimulating, currentSpeed, rulValue }: {
     <group ref={modelRef}>
       {model && <primitive object={model} />}
       
-      {/* Engine glow effects - positioned at realistic engine locations */}
-      <EngineGlow 
-        position={[-2, 0.5, 0]}  // Left engine 
-        alertLevel={alertLevel} 
-        isSimulating={isSimulating}
-        rulValue={rulValue}
-      />
-      <EngineGlow 
-        position={[2, 0.5, 0]}   // Right engine
-        alertLevel={alertLevel} 
-        isSimulating={isSimulating}
-        rulValue={rulValue}
-      />
+      {/* Debug info - can be removed later */}
+      {isSimulating && subsystemPredictions && subsystemPredictions.length > 0 && (
+        <mesh position={[4, 2, 0]}>
+          <boxGeometry args={[0.2, 0.2, 0.2]} />
+          <meshBasicMaterial color="#00ff00" />
+        </mesh>
+      )}
     </group>
   )
 }
@@ -172,8 +367,15 @@ export function Aircraft3DViewer({
   isSimulating, 
   currentSpeed, 
   simulationTime,
-  rulValue 
+  rulValue,
+  subsystemPredictions 
 }: AircraftViewerProps) {
+  // Debug log to see what subsystem data we're receiving
+  useEffect(() => {
+    if (isSimulating && subsystemPredictions && subsystemPredictions.length > 0) {
+      console.log('3D Viewer received subsystem predictions:', subsystemPredictions)
+    }
+  }, [isSimulating, subsystemPredictions])
   return (
     <div className="w-full h-64 bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg overflow-hidden border border-gray-200">
       <Canvas 
@@ -213,24 +415,23 @@ export function Aircraft3DViewer({
           <FlightOperatorCamera />
           
           {/* Aircraft model with engine vulnerability visualization */}
-          <AircraftModel 
-            alertLevel={alertLevel} 
-            isSimulating={isSimulating} 
+                    <AircraftModel
+            alertLevel={alertLevel}
+            isSimulating={isSimulating}
             currentSpeed={currentSpeed}
             rulValue={rulValue}
+            subsystemPredictions={subsystemPredictions}
           />
           
-          {/* Manual camera controls when not simulating */}
-          {!isSimulating && (
-            <OrbitControls
-              enablePan={true}
-              enableZoom={true}
-              enableRotate={true}
-              minDistance={15}
-              maxDistance={40}
-              target={[0, 0, 0]}
-            />
-          )}
+          {/* Camera controls - always enabled for flight operator interaction */}
+          <OrbitControls
+            enablePan={true}
+            enableZoom={true}
+            enableRotate={true}
+            minDistance={15}
+            maxDistance={40}
+            target={[0, 0, 0]}
+          />
           
           {/* Professional grid floor */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -3, 0]} receiveShadow>

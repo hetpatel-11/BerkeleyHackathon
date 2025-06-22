@@ -25,12 +25,22 @@ interface Alert {
   flightImpact: string
 }
 
+interface SubsystemPrediction {
+  subsystem: string
+  rul: number
+  risk_level: 'safe' | 'warning' | 'danger'
+  status: string
+  cycle?: number
+  timestamp?: number
+}
+
 interface SimulationData {
   isSimulating: boolean
   alertLevel: 'safe' | 'warning' | 'danger'
   currentSpeed: number
   simulationTime: number
   rulValue?: number
+  subsystemPredictions?: SubsystemPrediction[]
 }
 
 export function AviationSidebar() {
@@ -49,26 +59,62 @@ export function AviationSidebar() {
       setSimulationData(newData)
       
       // Generate alerts based on simulation state
-      if (newData.isSimulating && newData.rulValue !== undefined) {
+      if (newData.isSimulating) {
         const newAlerts: Alert[] = []
         
-        if (newData.alertLevel === 'danger' && newData.rulValue < 30) {
-          newAlerts.push({
-            id: Date.now(),
-            component: "Engine RUL Critical",
-            risk: "critical",
-            message: `Remaining Useful Life: ${newData.rulValue.toFixed(0)} cycles - IMMEDIATE ACTION REQUIRED`,
-            timestamp: `${newData.simulationTime}s ago`,
-            flightImpact: "Abort takeoff recommended"
-          })
-        } else if (newData.alertLevel === 'warning' && newData.rulValue < 80) {
-          newAlerts.push({
-            id: Date.now(),
-            component: "Engine RUL Warning",
-            risk: "moderate",
-            message: `Remaining Useful Life: ${newData.rulValue.toFixed(0)} cycles - Enhanced monitoring required`,
-            timestamp: `${newData.simulationTime}s ago`,
-            flightImpact: "Monitor closely during takeoff"
+        // Engine RUL alerts
+        if (newData.rulValue !== undefined) {
+          if (newData.rulValue < 30) {
+            newAlerts.push({
+              id: Date.now() + 1,
+              component: "🔥 Engine Critical",
+              risk: "critical",
+              message: `Engine RUL: ${newData.rulValue.toFixed(0)} cycles - IMMEDIATE ACTION REQUIRED`,
+              timestamp: `${newData.simulationTime}s`,
+              flightImpact: "⚠️ ABORT TAKEOFF"
+            })
+          } else if (newData.rulValue < 80) {
+            newAlerts.push({
+              id: Date.now() + 1,
+              component: "⚡ Engine Warning",
+              risk: "moderate",
+              message: `Engine RUL: ${newData.rulValue.toFixed(0)} cycles - Enhanced monitoring required`,
+              timestamp: `${newData.simulationTime}s`,
+              flightImpact: "🔍 Monitor takeoff closely"
+            })
+          }
+        }
+        
+        // Subsystem alerts
+        if (newData.subsystemPredictions) {
+          newData.subsystemPredictions.forEach((subsystem, index) => {
+            const subsystemNames = {
+              hydraulic: "💧 Hydraulic System",
+              electrical: "⚡ Electrical System", 
+              control_surface: "🛩️ Control Surfaces",
+              cabin: "🏠 Cabin System",
+              altimeter: "📊 Altimeter"
+            }
+            
+            if (subsystem.rul < 30) {
+              newAlerts.push({
+                id: Date.now() + index + 10,
+                component: subsystemNames[subsystem.subsystem as keyof typeof subsystemNames] || subsystem.subsystem,
+                risk: "critical",
+                message: `${subsystem.subsystem.toUpperCase()} RUL: ${subsystem.rul.toFixed(0)} cycles - CRITICAL FAILURE RISK`,
+                timestamp: `${newData.simulationTime}s`,
+                flightImpact: "⚠️ SYSTEM FAILURE IMMINENT"
+              })
+            } else if (subsystem.rul < 80) {
+              newAlerts.push({
+                id: Date.now() + index + 10,
+                component: subsystemNames[subsystem.subsystem as keyof typeof subsystemNames] || subsystem.subsystem,
+                risk: "moderate",
+                message: `${subsystem.subsystem.toUpperCase()} RUL: ${subsystem.rul.toFixed(0)} cycles - Degraded performance`,
+                timestamp: `${newData.simulationTime}s`,
+                flightImpact: "🔧 Schedule maintenance"
+              })
+            }
           })
         }
         
@@ -180,24 +226,78 @@ export function AviationSidebar() {
           </SidebarGroup>
         )}
 
-        {/* Quick Actions - Always visible */}
+        {/* Alert Notifications - Always visible */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-gray-700 font-semibold">Quick Actions</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-gray-700 font-semibold">Alert Notifications</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton className="w-full justify-start">
-                  <Wrench className="h-4 w-4" />
-                  <span>Schedule Maintenance</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton className="w-full justify-start">
-                  <Settings className="h-4 w-4" />
-                  <span>System Settings</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
+            <div className="space-y-3">
+              {/* Engine RUL Display */}
+              <div className="p-3 border rounded-lg bg-blue-50">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-blue-900">🔧 Engine System</span>
+                  <Badge variant={simulationData.rulValue !== undefined ? (simulationData.rulValue < 30 ? "destructive" : simulationData.rulValue < 80 ? "secondary" : "default") : "outline"}>
+                    {simulationData.rulValue !== undefined ? 
+                      `${simulationData.rulValue.toFixed(0)} cycles` : 
+                      "Monitoring..."}
+                  </Badge>
+                </div>
+                <p className="text-xs text-blue-700">
+                  Remaining Useful Life: {simulationData.rulValue !== undefined ? 
+                    `${simulationData.rulValue.toFixed(0)} cycles (~${(simulationData.rulValue * 1.5).toFixed(0)} flight hours)` : 
+                    "Awaiting prediction"}
+                </p>
+              </div>
+              
+              {/* Subsystem RUL Display */}
+              {simulationData.subsystemPredictions && simulationData.subsystemPredictions.length > 0 ? (
+                simulationData.subsystemPredictions.map((subsystem) => {
+                  const subsystemInfo = {
+                    hydraulic: { icon: "💧", name: "Hydraulic System", color: "indigo" },
+                    electrical: { icon: "⚡", name: "Electrical System", color: "yellow" },
+                    control_surface: { icon: "🛩️", name: "Control Surfaces", color: "green" },
+                    cabin: { icon: "🏠", name: "Cabin System", color: "purple" },
+                    altimeter: { icon: "📊", name: "Altimeter", color: "gray" }
+                  }
+                  
+                  const info = subsystemInfo[subsystem.subsystem as keyof typeof subsystemInfo] || 
+                              { icon: "⚙️", name: subsystem.subsystem, color: "gray" }
+                  
+                  return (
+                    <div key={subsystem.subsystem} className={`p-3 border rounded-lg bg-${info.color}-50`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-sm font-medium text-${info.color}-900`}>
+                          {info.icon} {info.name}
+                        </span>
+                        <Badge variant={subsystem.risk_level === 'danger' ? "destructive" : 
+                                       subsystem.risk_level === 'warning' ? "secondary" : "default"}>
+                          {subsystem.rul} cycles
+                        </Badge>
+                      </div>
+                      <p className={`text-xs text-${info.color}-700`}>
+                        Status: {subsystem.status} (RUL: {subsystem.rul} cycles)
+                      </p>
+                      {subsystem.cycle && (
+                        <p className={`text-xs text-${info.color}-600 mt-1`}>
+                          ⏱️ Updated at T:{subsystem.cycle}s {subsystem.timestamp && `• ${new Date(subsystem.timestamp).toLocaleTimeString()}`}
+                        </p>
+                      )}
+                    </div>
+                  )
+                })
+              ) : (
+                <div className="p-3 border rounded-lg bg-gray-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">⚙️ Subsystems</span>
+                    <Badge variant="outline">Monitoring...</Badge>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {simulationData.isSimulating ? 
+                      "Analyzing hydraulic, electrical, control surface, cabin, and altimeter systems..." :
+                      "Start simulation to monitor subsystem health"}
+                  </p>
+                </div>
+              )}
+            </div>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
