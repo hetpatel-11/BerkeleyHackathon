@@ -95,8 +95,8 @@ npm >= 8.0.0
 ### Installation
 ```bash
 # Clone the repository
-git clone https://github.com/hetpatel-11/BerkeleyHackathon.git
-cd BerkeleyHackathon
+git clone https://github.com/hetpatel-11/SafeWingAI_UCBerkeleyAIHackathon.git
+cd SafeWingAI_UCBerkeleyAIHackathon
 
 # Install dependencies
 npm install
