@@ -10,11 +10,6 @@
 
 SafeWing AI is an advanced aviation safety dashboard that uses Long Short-Term Memory (LSTM) neural networks to predict aircraft component failures **before** they become catastrophic. Our system monitors 6 critical aircraft subsystems in real-time and provides actionable insights to prevent aviation disasters.
 
-## 🚀 Live Demo
-
-- **Frontend**: [https://safewing-ai.vercel.app](https://safewing-ai.vercel.app)
-- **LSTM API**: `https://my-lstm-api-537563823214.us-central1.run.app`
-- **Local Development**: `http://localhost:3003`
 
 ## 🏗️ Architecture Overview
 
@@ -202,45 +197,6 @@ graph TD
     G --> H[Alert Generation]
 ```
 
-## 🚨 Safety Features
-
-### Predictive Alerts
-- **Early Warning System**: 3-50 cycles advance notice
-- **Critical Notifications**: Immediate attention alerts
-- **Trend Analysis**: Historical degradation patterns
-
-### Failure Prevention
-- **Component Monitoring**: 24/7 system surveillance
-- **Maintenance Scheduling**: Predictive maintenance windows
-- **Risk Mitigation**: Proactive intervention strategies
-
-## 🧪 Testing & Validation
-
-### LSTM Model Accuracy
-- **Engine Model**: 94.2% accuracy on test data
-- **Subsystem Models**: 89.7% average accuracy
-- **False Positive Rate**: < 5%
-- **Critical Miss Rate**: < 2%
-
-### Real-Time Performance
-- **API Response Time**: < 200ms average
-- **UI Update Frequency**: 1Hz (sensor data), 0.33Hz (predictions)
-- **3D Rendering**: 60 FPS smooth animations
-
-## 📈 Project Metrics
-
-### Development Stats
-- **Total Lines of Code**: ~3,500
-- **Components**: 15+ React components
-- **API Endpoints**: 7 prediction endpoints
-- **Training Data**: 10,000+ synthetic flight cycles
-
-### Performance Benchmarks
-- **Dashboard Load Time**: < 2 seconds
-- **Simulation Accuracy**: 95%+ realistic behavior
-- **Memory Usage**: < 50MB typical
-- **Network Efficiency**: Optimized API calls
-
 ## 🛠️ Development Workflow
 
 ### File Structure
@@ -291,11 +247,6 @@ UC Hackathon/
 4. Push to branch: `git push origin feature/amazing-feature`
 5. Open Pull Request
 
-### Code Standards
-- **TypeScript**: Strict mode enabled
-- **ESLint**: Airbnb configuration
-- **Prettier**: Automatic code formatting
-- **Testing**: Jest + React Testing Library
 
 ## 📄 License
 
@@ -304,15 +255,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - **NASA C-MAPSS Dataset**: Foundation for synthetic training data
-- **Air India Flight 171**: Inspiration for safety-first approach
-- **Google Cloud Platform**: LSTM model hosting and deployment
 - **Next.js Team**: Excellent framework for modern web applications
-
-## 📞 Contact
-
-**Het Patel** - Project Lead & ML Engineer
-- GitHub: [@hetpatel-11](https://github.com/hetpatel-11)
-- Email: het.patel@berkeley.edu
 
 **SafeWing AI Team**
 - Repository: [BerkeleyHackathon](https://github.com/hetpatel-11/BerkeleyHackathon)
