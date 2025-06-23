@@ -4,7 +4,7 @@
 
 ![Next.js](https://img.shields.io/badge/Next.js-13+-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5+-blue) ![LSTM](https://img.shields.io/badge/AI-LSTM-red)
 
-> **Inspired by Air India Flight 171 Crash (June 2025)** - A tragic aviation disaster that claimed 280 lives, highlighting the critical need for predictive aircraft maintenance systems.
+> **Inspired by Air India Flight 171 Crash (June 2025)** - A tragic aviation disaster that claimed 241 lives, highlighting the critical need for predictive aircraft maintenance systems.
 
 ## 🎯 Mission Statement
 
