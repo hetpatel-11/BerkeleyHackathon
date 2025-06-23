@@ -8,7 +8,7 @@
 
 ## 🎯 Mission Statement
 
-SafeWing AI is an advanced aviation safety dashboard that uses Long Short-Term Memory (LSTM) neural networks to predict aircraft component failures **before** they become catastrophic. Our system monitors 6 critical aircraft subsystems in real-time and provides actionable insights to prevent aviation disasters.
+SafeWing AI is an advanced aviation safety dashboard that uses Long Short-Term Memory (LSTM) and Random Forest neural networks to predict aircraft component failures **before** they become catastrophic. Our system monitors 6 critical aircraft subsystems in real-time and provides actionable insights to prevent aviation disasters.
 
 
 ## 🏗️ Architecture Overview
