@@ -4,7 +4,7 @@
 
 ![Next.js](https://img.shields.io/badge/Next.js-13+-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5+-blue) ![LSTM](https://img.shields.io/badge/AI-LSTM-red)
 
-> **Inspired by Air India Flight 171 Crash (June 2025)** - A tragic aviation disaster that claimed 241 lives, highlighting the critical need for predictive aircraft maintenance systems.
+> **Inspired by Air India Flight 171 Crash (June 2025)** - A tragic aviation disaster that claimed 280 lives, highlighting the critical need for predictive aircraft maintenance systems.
 
 ## 🎯 Mission Statement
 
@@ -15,7 +15,7 @@ SafeWing AI is an advanced aviation safety dashboard that uses Long Short-Term M
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Next.js UI   │───▶│   API Proxy      │───▶│  Google Cloud   │
+│   Next.js UI   │───▶│   API Proxy      │───▶│       NGROK      │
 │   Dashboard     │    │   (CORS Handler) │    │   LSTM Models   │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
         │                        │                        │
@@ -37,12 +37,12 @@ SafeWing AI is an advanced aviation safety dashboard that uses Long Short-Term M
 
 ### Backend
 - **API Proxy**: Next.js API Routes
-- **ML Models**: LSTM Neural Networks
-- **Deployment**: Google Cloud Run
+- **ML Models**: LSTM and Random Forest Neural Networks
+- **Deployment**: NGROK
 - **Database**: Real-time sensor simulation
 
 ### AI/ML Components
-- **Engine System**: 24-feature LSTM model
+- **Engine System**: 24-feature Random Forest and LSTM model
 - **Subsystem Models**: 5 individual LSTM models
 - **Training Data**: Synthetic flight data based on C-MAPSS dataset
 - **Prediction Frequency**: Every 3 seconds during simulation
@@ -258,8 +258,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Next.js Team**: Excellent framework for modern web applications
 
 **SafeWing AI Team**
-- Repository: [BerkeleyHackathon](https://github.com/hetpatel-11/BerkeleyHackathon)
-- Issues: [GitHub Issues](https://github.com/hetpatel-11/BerkeleyHackathon/issues)
+- Repository: [SafeWingAI_UCBerkeleyAIHackathon](https://github.com/hetpatel-11/SafeWingAI_UCBerkeleyAIHackathon)
+- Issues: [GitHub Issues](https://github.com/hetpatel-11/SafeWingAI_UCBerkeleyAIHackathon/issues)
 
 ---
 
