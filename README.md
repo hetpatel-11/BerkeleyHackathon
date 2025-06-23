@@ -1,6 +1,6 @@
 # 🛩️ SafeWing AI - Aviation Safety Dashboard
 
-**Predictive Aircraft Maintenance Using LSTM Neural Networks**
+**Predictive Aircraft Maintenance Using LSTM and Random Forest Neural Networks**
 
 ![Next.js](https://img.shields.io/badge/Next.js-13+-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5+-blue) ![LSTM](https://img.shields.io/badge/AI-LSTM-red)
 
@@ -45,7 +45,7 @@ SafeWing AI is an advanced aviation safety dashboard that uses Long Short-Term M
 
 ### AI/ML Components
 - **Engine System**: 24-feature Random Forest and LSTM model
-- **Subsystem Models**: 5 individual LSTM models
+- **Subsystem Models**: 5 individual LSTM models and Random Forest model. 
 - **Training Data**: Synthetic flight data based on C-MAPSS dataset
 - **Prediction Frequency**: Every 3 seconds during simulation
 
